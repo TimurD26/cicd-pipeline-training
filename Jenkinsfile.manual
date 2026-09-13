@@ -20,11 +20,7 @@ pipeline {
         choice(name: 'TARGET_ENV', choices: ['main', 'dev'], description: 'Which branch/environment to deploy')
     }
 
-    triggers {
-        // No SCM polling / webhook here on purpose: this job is manual-only.
-        // (An empty triggers block just documents that intent; omit entirely
-        // if you prefer — Jenkins jobs are manual-trigger by default.)
-    }
+    triggers {}
 
     environment {
         APP_PORT       = ''
