@@ -38,7 +38,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: "${params.TARGET_ENV}",
-                    url: 'https://github.com/<your-github-user>/cicd-pipeline-training.git'
+                    url: 'https://github.com/TimurD26/cicd-pipeline-training.git'
                     // credentialsId: 'github-token'   // uncomment + set if the repo is private
             }
         }
