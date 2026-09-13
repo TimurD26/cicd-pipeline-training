@@ -20,7 +20,6 @@ pipeline {
         choice(name: 'TARGET_ENV', choices: ['main', 'dev'], description: 'Which branch/environment to deploy')
     }
 
-    triggers {}
 
     environment {
         APP_PORT       = ''
