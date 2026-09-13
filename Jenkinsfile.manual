@@ -5,7 +5,7 @@
  * clicking "Build with Parameters" whenever someone wants to (re)deploy a
  * specific branch/env on demand. Point the Jenkins job at this file via
  * "Pipeline script from SCM" and set the "Script Path" to
- * Jenkinsfile.manual, with the job's own branch spec left as e.g. */main
+ * Jenkinsfile.manual, with the job's own branch spec left as e.g. main
  * (the TARGET_ENV parameter below is what actually decides which branch is
  * checked out and deployed, independent of the job-level branch setting).
  */
