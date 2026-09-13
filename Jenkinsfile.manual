@@ -1,0 +1,112 @@
+/**
+ * Regular (non-multibranch) Pipeline job name in Jenkins: "CD_deploy_manual"
+ *
+ * This job is NOT auto-triggered by SCM changes — it is meant to be run by
+ * clicking "Build with Parameters" whenever someone wants to (re)deploy a
+ * specific branch/env on demand. Point the Jenkins job at this file via
+ * "Pipeline script from SCM" and set the "Script Path" to
+ * Jenkinsfile.manual, with the job's own branch spec left as e.g. */main
+ * (the TARGET_ENV parameter below is what actually decides which branch is
+ * checked out and deployed, independent of the job-level branch setting).
+ */
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'Node 7.8.0'
+    }
+
+    parameters {
+        choice(name: 'TARGET_ENV', choices: ['main', 'dev'], description: 'Which branch/environment to deploy')
+    }
+
+    triggers {
+        // No SCM polling / webhook here on purpose: this job is manual-only.
+        // (An empty triggers block just documents that intent; omit entirely
+        // if you prefer — Jenkins jobs are manual-trigger by default.)
+    }
+
+    environment {
+        APP_PORT       = ''
+        IMAGE_NAME     = ''
+        CONTAINER_NAME = ''
+        LOGO_FILE      = ''
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: "${params.TARGET_ENV}",
+                    url: 'https://github.com/<your-github-user>/cicd-pipeline-training.git'
+                    // credentialsId: 'github-token'   // uncomment + set if the repo is private
+            }
+        }
+
+        stage('Set environment') {
+            steps {
+                script {
+                    if (params.TARGET_ENV == 'main') {
+                        env.APP_PORT       = '3000'
+                        env.IMAGE_NAME     = 'nodemain:v1.0'
+                        env.CONTAINER_NAME = 'node-main'
+                        env.LOGO_FILE      = 'logos/logo-main.svg'
+                    } else {
+                        env.APP_PORT       = '3001'
+                        env.IMAGE_NAME     = 'nodedev:v1.0'
+                        env.CONTAINER_NAME = 'node-dev'
+                        env.LOGO_FILE      = 'logos/logo-dev.svg'
+                    }
+                    echo "TARGET_ENV=${params.TARGET_ENV} -> port=${env.APP_PORT}, image=${env.IMAGE_NAME}, container=${env.CONTAINER_NAME}"
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('app') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('app') {
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Apply branch assets') {
+            steps {
+                sh "cp ${env.LOGO_FILE} app/public/logo.svg"
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                sh "docker build --build-arg APP_PORT=${env.APP_PORT} -t ${env.IMAGE_NAME} ."
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Only the container for the selected TARGET_ENV is touched;
+                // the other environment keeps running untouched.
+                sh """
+                    if [ \$(docker ps -aq -f name=^${env.CONTAINER_NAME}\$) ]; then
+                        docker rm -f ${env.CONTAINER_NAME}
+                    fi
+                """
+                sh "docker run -d --name ${env.CONTAINER_NAME} -p ${env.APP_PORT}:${env.APP_PORT} -e PORT=${env.APP_PORT} -e APP_ENV=${params.TARGET_ENV} ${env.IMAGE_NAME}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Manually deployed ${params.TARGET_ENV} -> http://localhost:${env.APP_PORT}"
+        }
+    }
+}

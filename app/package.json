@@ -1,0 +1,16 @@
+{
+  "name": "cicd-pipeline-demo-app",
+  "version": "1.0.0",
+  "description": "Tiny Node/Express app used to demonstrate branch-aware Jenkins CI/CD (multibranch + manual pipelines)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=7.8.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
