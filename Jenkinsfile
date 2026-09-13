@@ -20,13 +20,13 @@ pipeline {
         nodejs 'Node 7.8.0'
     }
 
-    environment {
-        // Populated in the "Set environment" stage below.
-        APP_PORT       = ''
-        IMAGE_NAME     = ''
-        CONTAINER_NAME = ''
-        LOGO_FILE      = ''
-    }
+    // NOTE: APP_PORT / IMAGE_NAME / CONTAINER_NAME / LOGO_FILE are deliberately
+    // NOT pre-declared in a top-level `environment {}` block. Declarative
+    // Pipeline wraps each stage in its own withEnv() using the values declared
+    // there, which then overrides/clobbers any `env.X = ...` assignment made
+    // from inside a stage's script block, silently resetting it back to ''
+    // (you'd see "port=null" etc. in later stages). Setting them for the first
+    // time via env.X = ... inside "Set environment" below avoids that.
 
     stages {
 
@@ -50,7 +50,6 @@ pipeline {
                         env.CONTAINER_NAME = 'node-dev'
                         env.LOGO_FILE      = 'logos/logo-dev.svg'
                     } else {
-                        // Any other/feature branch: safe defaults, own image/container name
                         env.APP_PORT       = '3002'
                         env.IMAGE_NAME     = "node${env.BRANCH_NAME}:v1.0".replaceAll('[^a-zA-Z0-9_.:-]', '-')
                         env.CONTAINER_NAME = "node-${env.BRANCH_NAME}".replaceAll('[^a-zA-Z0-9_.-]', '-')
@@ -79,8 +78,6 @@ pipeline {
 
         stage('Apply branch assets') {
             steps {
-                // Swap in the branch-specific logo before the image is built,
-                // so the docker image bakes in the right picture per env.
                 sh "cp ${env.LOGO_FILE} app/public/logo.svg"
             }
         }
@@ -94,9 +91,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Advanced task: only tear down the container for THIS
-                    // env/branch, leaving containers from other branches
-                    // (e.g. main untouched while deploying dev) running.
                     sh """
                         if [ \$(docker ps -aq -f name=^${env.CONTAINER_NAME}\$) ]; then
                             docker rm -f ${env.CONTAINER_NAME}
