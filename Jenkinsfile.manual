@@ -20,14 +20,6 @@ pipeline {
         choice(name: 'TARGET_ENV', choices: ['main', 'dev'], description: 'Which branch/environment to deploy')
     }
 
-
-    environment {
-        APP_PORT       = ''
-        IMAGE_NAME     = ''
-        CONTAINER_NAME = ''
-        LOGO_FILE      = ''
-    }
-
     stages {
 
         stage('Checkout') {
